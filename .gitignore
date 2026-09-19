@@ -1,0 +1,30 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.slnx
+*.sw?
+
+# Visual Studio — cache interno (índice de busca etc.), fica travado pelo
+# próprio VS enquanto o .slnx está aberto; nunca deve ir pro Git (mesmo
+# problema que já tratamos no vite.config.js pro watcher do Vite).
+.vs/

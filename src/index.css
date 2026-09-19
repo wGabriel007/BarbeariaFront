@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+/*
+  Tailwind v4: não precisa mais de tailwind.config.js pra coisas
+  simples — dá pra declarar "tokens" de tema direto aqui, dentro de
+  @theme, e usar como classes normais (ex.: bg-brand-600).
+  Isso é só uma paleta neutra pra dar uma cara de "sistema" pro app;
+  fique livre pra trocar as cores.
+*/
+@theme {
+  --color-brand-50: #f5f7fa;
+  --color-brand-100: #e9edf3;
+  --color-brand-200: #cfd8e3;
+  --color-brand-300: #a7b6cc;
+  --color-brand-400: #7891b0;
+  --color-brand-500: #556f93;
+  --color-brand-600: #3f5678;
+  --color-brand-700: #334562;
+  --color-brand-800: #2a3850;
+  --color-brand-900: #1f2a3c;
+
+  /* "Superfície" (cartões, tabelas, modais, campos de formulário) — em
+     todo o app isso é escrito como bg-surface em vez do bg-white literal
+     de antes, exatamente pra poder virar escuro no modo escuro (ver
+     ":root.dark" abaixo) sem precisar caçar cada ocorrência de bg-white
+     nas páginas. */
+  --color-surface: #ffffff;
+}
+
+/* Habilita a variante "dark:" baseada numa CLASSE (.dark no <html>, ver
+   hooks/useTema.js) em vez do padrão do Tailwind v4 (que só olha
+   prefers-color-scheme do sistema operacional, sem permitir escolha
+   manual) — é a sintaxe oficial do v4 pra dark mode "controlado". */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* =====================================================================
+   MODO ESCURO — truque de "inverter a rampa": em vez de escrever
+   dark:bg-... / dark:text-... em cada um dos ~15 arquivos que usam
+   bg-brand-50/100, text-brand-900/600 etc., redefinimos aqui o que cada
+   TOKEN da paleta significa quando ".dark" está presente no <html>. Como
+   o app inteiro já usa consistentemente brand-50/100 pra fundo claro e
+   brand-700/900 pra texto/destaque escuro, invertê-los faz o app inteiro
+   virar escuro de graça, sem tocar em nenhuma página.
+   ===================================================================== */
+:root.dark {
+  --color-brand-50: #10151d;
+  --color-brand-100: #212b3a;
+  --color-brand-200: #2f3b4d;
+  --color-brand-300: #445269;
+  --color-brand-400: #7c8ba0;
+  --color-brand-500: #9aa8bc;
+  --color-brand-600: #b9c4d4;
+  --color-brand-700: #5b7bab;
+  --color-brand-800: #4a6690;
+  --color-brand-900: #eef2f7;
+
+  --color-surface: #171e29;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-brand-50 text-brand-900 transition-colors duration-150;
+}
+
+/*
+  Pequenas animações reutilizadas nas "caixas de interação" do sistema
+  (modais, cartões, linhas de tabela, alertas) — registradas aqui como
+  utilitários do Tailwind (--animate-*) pra usar como classe normal
+  (ex.: className="animate-scale-in"), sem precisar de nenhuma
+  biblioteca externa.
+*/
+@theme {
+  --animate-fade-in: fade-in 0.18s ease-out both;
+  --animate-scale-in: scale-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-slide-up: slide-up 0.25s ease-out both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Respeita quem pediu menos movimento no sistema operacional/navegador. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
