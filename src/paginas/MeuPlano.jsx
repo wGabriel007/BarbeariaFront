@@ -5,6 +5,7 @@ import { planosApi } from '../api/planos'
 import { solicitacoesPlanoApi } from '../api/solicitacoesPlano'
 import { useAuth } from '../contexto/AuthContext'
 import { useAsync } from '../ganchos/useAsync'
+import { useCaminhoBarbearia } from '../ganchos/useCaminhoBarbearia'
 import { FnmarcarComoVisto } from '../utilitarios/notificacoes'
 import { FnButton } from '../componentes/ui/Button'
 import { FnField, FnInput } from '../componentes/ui/Field'
@@ -49,6 +50,7 @@ function FnformatarData(iso) {
 // passar a ter algo pra mostrar.
 export function FnMeuPlano() {
   const { usuario } = useAuth()
+  const Fncaminho = useCaminhoBarbearia()
   const { dados: assinaturas, carregando, erro, Fnrecarregar } = useAsync(() => assinaturasApi.FnlistarMinhas(), [])
   const { dados: planos } = useAsync(() => planosApi.Fnlistar(), [])
 
@@ -153,7 +155,7 @@ export function FnMeuPlano() {
       {assinaturas && assinaturas.length === 0 && (
         <FnEmptyState>
           Você ainda não tem nenhum plano.{' '}
-          <Link to="/planos" className="font-medium text-brand-700 underline hover:text-brand-900">
+          <Link to={Fncaminho('/planos')} className="font-medium text-brand-700 underline hover:text-brand-900">
             Veja o catálogo de planos
           </Link>{' '}
           e solicite um.

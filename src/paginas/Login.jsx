@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexto/AuthContext'
+import { useCaminhoBarbearia } from '../ganchos/useCaminhoBarbearia'
 import { FnAuthLayout } from '../componentes/AuthLayout'
 import { FnButton } from '../componentes/ui/Button'
 import { FnField, FnInput, FnPasswordInput } from '../componentes/ui/Field'
@@ -10,6 +11,7 @@ export function FnLogin() {
   const { Fnlogin } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const Fncaminho = useCaminhoBarbearia()
 
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
@@ -26,7 +28,7 @@ export function FnLogin() {
       // Se a pessoa foi mandada pro /login a partir de uma rota
       // protegida (ver RotaProtegida.jsx), volta pra ONDE ela queria
       // ir, em vez de sempre cair na FnAgenda.
-      const destino = location.state?.de?.pathname ?? '/'
+      const destino = location.state?.de?.pathname ?? Fncaminho()
       navigate(destino, { replace: true })
     } catch (err) {
       setErro(err.message)
@@ -66,7 +68,7 @@ export function FnLogin() {
 
         <p className="text-center text-sm text-brand-500">
           Ainda não tem conta?{' '}
-          <Link to="/cadastro" className="font-medium text-brand-700 hover:underline">
+          <Link to={Fncaminho('/cadastro')} className="font-medium text-brand-700 hover:underline">
             Criar conta
           </Link>
         </p>

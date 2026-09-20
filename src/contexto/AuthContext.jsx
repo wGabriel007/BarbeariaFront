@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { authApi } from '../api/auth'
 import { FnsetAuthToken, FnsetUnauthorizedHandler } from '../api/client'
 
@@ -32,6 +32,7 @@ function FnlerSessaoSalva() {
  */
 export function FnAuthProvider({ children }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const [sessao, setSessao] = useState(() => FnlerSessaoSalva())
 
   // Mantém client.js (o axios) sincronizado com o token atual — tanto
@@ -52,8 +53,19 @@ export function FnAuthProvider({ children }) {
       // Se não der pra limpar o localStorage, não é motivo pra travar o
       // Fnlogout — o estado em memória (sessao=null) já foi limpo.
     }
-    navigate('/login')
-  }, [navigate])
+    // Multi-barbearia: não existe mais um "/login" único — cada barbearia
+    // tem o seu, em "/:slug/login" (ver App.jsx), e o SuperAdmin tem o
+    // dele à parte, em "/admin/login". Em vez de precisar saber o slug de
+    // outro jeito (este Provider fica ACIMA das rotas, sem useParams()),
+    // lê o primeiro pedaço da URL atual direto: é exatamente o slug (ou
+    // "admin") de onde a pessoa estava quando foi deslogada — inclusive
+    // no caso mais comum de Fnlogout, um 401 vindo de QUALQUER tela (ver
+    // FnsetUnauthorizedHandler abaixo).
+    const segmento = location.pathname.split('/').filter(Boolean)[0]
+    if (segmento === 'admin') navigate('/admin/login')
+    else if (segmento) navigate(`/${segmento}/login`)
+    else navigate('/') // sem slug nenhum pra voltar (ex.: já estava na landing) — não existe "/login" solto pra ir
+  }, [navigate, location.pathname])
 
   // client.js chama isso sozinho quando QUALQUER requisição volta 401
   // (token ausente/expirado/inválido). Sem essa ponte, a pessoa ficaria
@@ -101,6 +113,15 @@ export function FnAuthProvider({ children }) {
     [FnsalvarSessao],
   )
 
+  // Login do SuperAdmin (dono da plataforma — ver paginas/AdminLogin.jsx),
+  // separado de Fnlogin porque bate em POST /auth/login-admin, não
+  // /auth/login (ver AuthController na Api) — não passa pelo header
+  // X-Empresa-Slug, porque o SuperAdmin não pertence a barbearia nenhuma.
+  const FnloginAdmin = useCallback(
+    async (email, senha) => FnsalvarSessao(await authApi.FnloginAdmin(email, senha)),
+    [FnsalvarSessao],
+  )
+
   const value = useMemo(() => {
     const tipo = sessao?.usuario?.tipo
     return {
@@ -113,12 +134,14 @@ export function FnAuthProvider({ children }) {
       // [Authorize(Roles = "Admin,Barbeiro")]), isso aqui é só pra não
       // nem mostrar botão de uma ação que ele não pode fazer.
       ehStaff: tipo === 'Admin' || tipo === 'Barbeiro',
+      ehSuperAdmin: tipo === 'SuperAdmin',
       Fnlogin,
       Fnregistrar,
+      FnloginAdmin,
       Fnlogout,
       FnatualizarUsuario,
     }
-  }, [sessao, Fnlogin, Fnregistrar, Fnlogout, FnatualizarUsuario])
+  }, [sessao, Fnlogin, Fnregistrar, FnloginAdmin, Fnlogout, FnatualizarUsuario])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

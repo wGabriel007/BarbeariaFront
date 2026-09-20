@@ -1,7 +1,24 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { configuracaoSiteApi } from '../api/configuracaoSite'
+import { FnsetEmpresaSlug } from '../api/client'
 
 const ConfiguracaoSiteContext = createContext(null)
+
+// Nomes reservados pra rotas de nível raiz que NÃO são o slug de uma
+// barbearia (ver App.jsx e a mesma lista em Barbearia.Domain.Entidades.
+// Empresa.SlugsReservados, na Api — nenhuma barbearia consegue nascer
+// com um desses nomes, exatamente pra essa conta bater dos dois lados).
+const SEGMENTOS_SEM_SLUG = new Set(['admin', 'login', 'cadastro', 'api', 'app', 'static', 'assets'])
+
+// Tira o "apelido" da barbearia direto da URL atual (primeiro pedaço do
+// caminho) — ex.: "/barbearia-do-joao/agenda" -> "barbearia-do-joao".
+// Sem slug (raiz "/", ou área "/admin/...") devolve null.
+function FnslugDaUrl(pathname) {
+  const primeiroSegmento = pathname.split('/').filter(Boolean)[0]
+  if (!primeiroSegmento || SEGMENTOS_SEM_SLUG.has(primeiroSegmento)) return null
+  return primeiroSegmento
+}
 
 // Escurece uma cor hex multiplicando cada Fncanal RGB — usado só pra
 // derivar sozinho o tom de "hover" de um botão primário (brand-800) a
@@ -23,25 +40,57 @@ function Fnescurecer(hex, fator) {
  * alguém logado: a tela de FnLogin também precisa mostrar a marca certa da
  * barbearia (ver componentes/AuthLayout.jsx), e por isso
  * GET /api/configuracao-site é [AllowAnonymous] na Api de propósito.
+ *
+ * Multi-barbearia: fica ACIMA das <Routes> (ver main.jsx), então não dá
+ * pra usar useParams() pra saber o slug da barbearia atual — em vez
+ * disso lê direto da URL com useLocation() (funciona em qualquer lugar
+ * dentro do <BrowserRouter>) e repassa pro client.js via
+ * FnsetEmpresaSlug(), que é quem de fato manda o header X-Empresa-Slug
+ * em toda requisição (ver EmpresaResolverMiddleware na Api). Refaz a
+ * busca toda vez que o slug muda — troca de barbearia sem recarregar a
+ * página inteira (raro, mas pode acontecer se alguém colar outro link
+ * na mesma aba) não pode continuar mostrando a marca da barbearia
+ * anterior.
  */
 export function FnConfiguracaoSiteProvider({ children }) {
+  const location = useLocation()
+  const slug = FnslugDaUrl(location.pathname)
   const [config, setConfig] = useState(null)
+  // true quando a última busca voltou 404 (link com slug errado, ou de
+  // barbearia inativa — ver ConfiguracaoSiteRepository.FnObterAsync na
+  // Api) — paginas/BarbeariaNaoEncontrada.jsx usa isso pra mostrar um
+  // aviso amigável em vez de deixar a tela inteira quebrada/em branco.
+  const [naoEncontrada, setNaoEncontrada] = useState(false)
 
   const Fnrecarregar = useCallback(() => {
+    // Sem slug (raiz "/" ou área "/admin/...") não existe barbearia
+    // nenhuma pra buscar — nem tenta, só garante que uma config antiga
+    // (de uma barbearia visitada antes, na mesma aba) não fique presa.
+    if (!slug) {
+      setConfig(null)
+      setNaoEncontrada(false)
+      return
+    }
+
     configuracaoSiteApi
       .Fnobter()
-      .then(setConfig)
-      .catch(() => {
-        // Se a Api ainda não subiu ou a rota falhar por qualquer motivo,
-        // o app inteiro não pode travar por causa disso — cada tela que
-        // usa 'config' já sabe cair pro nome/ícone padrão quando ele
-        // continua null (ver AuthLayout.jsx e Layout.jsx).
+      .then((dados) => {
+        setConfig(dados)
+        setNaoEncontrada(false)
       })
-  }, [])
+      .catch((err) => {
+        setConfig(null)
+        setNaoEncontrada(err.response?.status === 404)
+        // Qualquer outro erro (rede, Api fora do ar) não trava o app —
+        // cada tela que usa 'config' já sabe cair pro nome/ícone padrão
+        // quando ele continua null (ver AuthLayout.jsx e Layout.jsx).
+      })
+  }, [slug])
 
   useEffect(() => {
+    FnsetEmpresaSlug(slug)
     Fnrecarregar()
-  }, [Fnrecarregar])
+  }, [slug, Fnrecarregar])
 
   // Sobrescreve só os tons "700"/"800" da paleta (botões, ícones, item
   // ativo do menu) com a cor escolhida pelo Admin — os outros tons (fundo,
@@ -61,7 +110,9 @@ export function FnConfiguracaoSiteProvider({ children }) {
   }, [config?.corPrimaria])
 
   return (
-    <ConfiguracaoSiteContext.Provider value={{ config, Fnrecarregar }}>{children}</ConfiguracaoSiteContext.Provider>
+    <ConfiguracaoSiteContext.Provider value={{ config, Fnrecarregar, slug, naoEncontrada }}>
+      {children}
+    </ConfiguracaoSiteContext.Provider>
   )
 }
 

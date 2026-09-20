@@ -1,7 +1,13 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes, useParams } from 'react-router-dom'
 import { FnLayout } from './componentes/Layout'
 import { FnRotaProtegida } from './componentes/RotaProtegida'
+import { FnRotaProtegidaAdmin } from './componentes/RotaProtegidaAdmin'
+import { FnPortaDaBarbearia } from './componentes/PortaDaBarbearia'
 import { useAuth } from './contexto/AuthContext'
+import { FnLanding } from './paginas/Landing'
+import { FnAdminLogin } from './paginas/AdminLogin'
+import { FnAdminDashboard } from './paginas/AdminDashboard'
+import { FnNaoEncontrada } from './paginas/NaoEncontrada'
 import { FnLogin } from './paginas/Login'
 import { FnCadastro } from './paginas/Cadastro'
 import { FnAgenda } from './paginas/Agenda'
@@ -20,103 +26,128 @@ import { FnConfiguracaoAparencia } from './paginas/ConfiguracaoAparencia'
 import { FnSobreABarbearia } from './paginas/SobreABarbearia'
 import { FnRanking } from './paginas/Ranking'
 
-// A raiz "/" não é mais uma página própria — cada tipo de usuário tem um
-// "início" diferente (staff cai na FnAgenda do dia; Comum cai em "meus
-// agendamentos", já que ele não vê a FnAgenda — ver Layout.jsx/ITENS_MENU).
+// O "início" de uma barbearia (índice de "/:slug") também não é uma
+// página própria — cada tipo de usuário tem um diferente (staff cai na
+// FnAgenda do dia; Comum cai em "meus agendamentos", já que ele não vê a
+// FnAgenda — ver Layout.jsx/ITENS_MENU).
 function FnInicio() {
   const { ehStaff } = useAuth()
-  return <Navigate to={ehStaff ? '/agenda' : '/meus-agendamentos'} replace />
+  const { slug } = useParams()
+  return <Navigate to={`/${slug}/${ehStaff ? 'agenda' : 'meus-agendamentos'}`} replace />
 }
 
-// Mapa de URL -> página. /login e /cadastro são as únicas rotas
-// públicas — tudo dentro de <FnLayout/> passa primeiro por
-// <FnRotaProtegida/>, que manda pra /login quem não estiver autenticado
-// (ver componentes/RotaProtegida.jsx).
+// Mapa de URL -> página.
+//
+// Multi-barbearia: cada barbearia vive sob seu próprio "/:slug" — é o
+// que separa uma barbearia da outra no FRONT (o back já separa os dados
+// por trás, ver EmpresaResolverMiddleware/HasQueryFilter na Api). Só
+// "/:slug/login" e "/:slug/cadastro" são públicas dentro dessa área;
+// tudo dentro de <FnLayout/> passa primeiro por <FnRotaProtegida/>, que
+// manda pra lá quem não estiver autenticado NAQUELA barbearia (ver
+// componentes/RotaProtegida.jsx). A área "/admin" é a da plataforma em
+// si (o SuperAdmin, dono do sistema — ver componentes/RotaProtegidaAdmin.jsx)
+// e não tem slug nenhum. A raiz "/" é só uma landing (ver
+// paginas/Landing.jsx) — não pertence a nenhuma barbearia.
 export default function FnApp() {
   return (
     <Routes>
-      <Route path="/login" element={<FnLogin />} />
-      <Route path="/cadastro" element={<FnCadastro />} />
+      <Route path="/" element={<FnLanding />} />
 
+      <Route path="/admin/login" element={<FnAdminLogin />} />
       <Route
-        path="/"
+        path="/admin"
         element={
-          <FnRotaProtegida>
-            <FnLayout />
-          </FnRotaProtegida>
+          <FnRotaProtegidaAdmin>
+            <FnAdminDashboard />
+          </FnRotaProtegidaAdmin>
         }
-      >
-        <Route index element={<FnInicio />} />
+      />
+
+      <Route path="/:slug" element={<FnPortaDaBarbearia><Outlet /></FnPortaDaBarbearia>}>
+        <Route path="login" element={<FnLogin />} />
+        <Route path="cadastro" element={<FnCadastro />} />
+
         <Route
-          path="agenda"
           element={
-            <FnRotaProtegida somenteStaff>
-              <FnAgenda />
+            <FnRotaProtegida>
+              <FnLayout />
             </FnRotaProtegida>
           }
-        />
-        <Route path="meus-agendamentos" element={<FnMeusAgendamentos />} />
-        <Route path="fila-de-espera" element={<FnFilaDeEspera />} />
-        <Route
-          path="solicitacoes"
-          element={
-            <FnRotaProtegida somenteStaff>
-              <FnSolicitacoes />
-            </FnRotaProtegida>
-          }
-        />
-        <Route
-          path="clientes"
-          element={
-            <FnRotaProtegida somenteStaff>
-              <FnClientes />
-            </FnRotaProtegida>
-          }
-        />
-        <Route path="servicos" element={<FnServicos />} />
-        <Route path="barbeiros" element={<FnBarbeiros />} />
-        <Route path="ranking" element={<FnRanking />} />
-        <Route path="planos" element={<FnPlanos />} />
-        <Route
-          path="meu-plano"
-          element={
-            <FnRotaProtegida somenteComum>
-              <FnMeuPlano />
-            </FnRotaProtegida>
-          }
-        />
-        <Route
-          path="pagamentos"
-          element={
-            <FnRotaProtegida somenteStaff>
-              <FnPagamentos />
-            </FnRotaProtegida>
-          }
-        />
-        <Route
-          path="usuarios"
-          element={
-            <FnRotaProtegida somenteStaff>
-              <FnUsuarios />
-            </FnRotaProtegida>
-          }
-        />
-        <Route path="perfil" element={<FnPerfil />} />
-        <Route
-          path="aparencia"
-          element={
-            <FnRotaProtegida somenteAdmin>
-              <FnConfiguracaoAparencia />
-            </FnRotaProtegida>
-          }
-        />
-        {/* Sem somenteStaff/somenteComum: aberta pra todo mundo — só a
-            EDIÇÃO (formulários dentro da página) é staff-only, decidida
-            na própria FnSobreABarbearia via useAuth().ehStaff (a Api já
-            recusa a alteração pra um Comum, isso aqui é só não mostrar
-            formulário nenhum pra quem não pode usar). */}
-        <Route path="sobre-barbearia" element={<FnSobreABarbearia />} />
+        >
+          <Route index element={<FnInicio />} />
+          <Route
+            path="agenda"
+            element={
+              <FnRotaProtegida somenteStaff>
+                <FnAgenda />
+              </FnRotaProtegida>
+            }
+          />
+          <Route path="meus-agendamentos" element={<FnMeusAgendamentos />} />
+          <Route path="fila-de-espera" element={<FnFilaDeEspera />} />
+          <Route
+            path="solicitacoes"
+            element={
+              <FnRotaProtegida somenteStaff>
+                <FnSolicitacoes />
+              </FnRotaProtegida>
+            }
+          />
+          <Route
+            path="clientes"
+            element={
+              <FnRotaProtegida somenteStaff>
+                <FnClientes />
+              </FnRotaProtegida>
+            }
+          />
+          <Route path="servicos" element={<FnServicos />} />
+          <Route path="barbeiros" element={<FnBarbeiros />} />
+          <Route path="ranking" element={<FnRanking />} />
+          <Route path="planos" element={<FnPlanos />} />
+          <Route
+            path="meu-plano"
+            element={
+              <FnRotaProtegida somenteComum>
+                <FnMeuPlano />
+              </FnRotaProtegida>
+            }
+          />
+          <Route
+            path="pagamentos"
+            element={
+              <FnRotaProtegida somenteStaff>
+                <FnPagamentos />
+              </FnRotaProtegida>
+            }
+          />
+          <Route
+            path="usuarios"
+            element={
+              <FnRotaProtegida somenteStaff>
+                <FnUsuarios />
+              </FnRotaProtegida>
+            }
+          />
+          <Route path="perfil" element={<FnPerfil />} />
+          <Route
+            path="aparencia"
+            element={
+              <FnRotaProtegida somenteAdmin>
+                <FnConfiguracaoAparencia />
+              </FnRotaProtegida>
+            }
+          />
+          {/* Sem somenteStaff/somenteComum: aberta pra todo mundo — só a
+              EDIÇÃO (formulários dentro da página) é staff-only, decidida
+              na própria FnSobreABarbearia via useAuth().ehStaff (a Api já
+              recusa a alteração pra um Comum, isso aqui é só não mostrar
+              formulário nenhum pra quem não pode usar). */}
+          <Route path="sobre-barbearia" element={<FnSobreABarbearia />} />
+        </Route>
       </Route>
+
+      <Route path="*" element={<FnNaoEncontrada />} />
     </Routes>
   )
 }

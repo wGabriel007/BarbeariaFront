@@ -13,4 +13,9 @@ export const authApi = {
   // outros admins são criadas depois, já logado, na tela de Usuários
   // (ver src/paginas/Usuarios.jsx).
   Fnregistrar: (dados) => api.post('/auth/registrar', dados).then((r) => r.data),
+
+  // Login do SuperAdmin (dono da plataforma) — rota à parte, sem
+  // X-Empresa-Slug, já que ele não pertence a nenhuma barbearia (ver
+  // AuthController.cs / EmpresasController.cs na Api).
+  FnloginAdmin: (email, senha) => api.post('/auth/login-admin', { email, senha }).then((r) => r.data),
 }

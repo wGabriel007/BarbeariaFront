@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexto/AuthContext'
 import { FnurlArquivo } from '../api/client'
 import { useTema } from '../ganchos/useTema'
+import { useCaminhoBarbearia } from '../ganchos/useCaminhoBarbearia'
 import { useConfiguracaoSite } from '../contexto/ConfiguracaoSiteContext'
 import { FnrotuloTipoUsuario } from '../utilitarios/usuario'
 import {
@@ -115,6 +116,7 @@ export function FnLayout() {
   const { usuario, Fnlogout, ehStaff } = useAuth()
   const { config } = useConfiguracaoSite()
   const { escuro, Fnalternar: alternarTema } = useTema()
+  const Fncaminho = useCaminhoBarbearia()
   const itensVisiveis = ITENS_MENU.filter(
     (item) =>
       (!item.somenteStaff || ehStaff) &&
@@ -303,7 +305,7 @@ export function FnLayout() {
             return (
               <NavLink
                 key={item.to}
-                to={item.to}
+                to={Fncaminho(item.to)}
                 end={item.to === '/'}
                 // No celular, tocar num item navega E fecha o menu — sem
                 // isso, o menu ficaria aberto tampando a página nova.
@@ -336,7 +338,7 @@ export function FnLayout() {
               já dão o convite visual pra clicar, sem precisar de mais um
               item na navegação principal só pra isso. */}
           <Link
-            to="/perfil"
+            to={Fncaminho('/perfil')}
             onClick={() => setMenuAberto(false)}
             className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-brand-100"
           >

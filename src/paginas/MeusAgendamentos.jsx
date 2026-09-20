@@ -5,6 +5,7 @@ import { barbeirosApi } from '../api/barbeiros'
 import { servicosApi } from '../api/servicos'
 import { useAsync } from '../ganchos/useAsync'
 import { useToastErro } from '../ganchos/useToastErro'
+import { useCaminhoBarbearia } from '../ganchos/useCaminhoBarbearia'
 import { useAuth } from '../contexto/AuthContext'
 import { FnmarcarComoVisto } from '../utilitarios/notificacoes'
 import { FnButton } from '../componentes/ui/Button'
@@ -43,6 +44,7 @@ const CANCELAVEIS = ['Pendente', 'Confirmado', 'Agendado']
  */
 export function FnMeusAgendamentos() {
   const { usuario } = useAuth()
+  const Fncaminho = useCaminhoBarbearia()
   const { dados: meus, carregando, erro, Fnrecarregar } = useAsync(
     () => agendamentosApi.FnlistarMeus(),
     [],
@@ -157,7 +159,7 @@ export function FnMeusAgendamentos() {
                           ? 'Você é o próximo da vez!'
                           : `Fila de hoje: você é o ${naFila.minhaPosicao}º de ${naFila.totalNaFila}`}
                       </span>
-                      <Link to="/fila-de-espera" className="underline hover:text-brand-700">
+                      <Link to={Fncaminho('/fila-de-espera')} className="underline hover:text-brand-700">
                         Ver fila
                       </Link>
                     </div>

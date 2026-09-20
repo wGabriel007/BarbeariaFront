@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexto/AuthContext'
+import { useCaminhoBarbearia } from '../ganchos/useCaminhoBarbearia'
 
 // Embrulha as rotas que exigem Fnlogin (tudo dentro do <FnLayout/> — ver
 // App.jsx). Sem sessão válida, manda pra /login e guarda de onde a
@@ -23,21 +24,22 @@ import { useAuth } from '../contexto/AuthContext'
 export function FnRotaProtegida({ children, somenteStaff = false, somenteComum = false, somenteAdmin = false }) {
   const { autenticado, ehStaff, usuario } = useAuth()
   const location = useLocation()
+  const Fncaminho = useCaminhoBarbearia()
 
   if (!autenticado) {
-    return <Navigate to="/login" replace state={{ de: location }} />
+    return <Navigate to={Fncaminho('/login')} replace state={{ de: location }} />
   }
 
   if (somenteStaff && !ehStaff) {
-    return <Navigate to="/" replace />
+    return <Navigate to={Fncaminho()} replace />
   }
 
   if (somenteComum && ehStaff) {
-    return <Navigate to="/" replace />
+    return <Navigate to={Fncaminho()} replace />
   }
 
   if (somenteAdmin && usuario?.tipo !== 'Admin') {
-    return <Navigate to="/" replace />
+    return <Navigate to={Fncaminho()} replace />
   }
 
   return children

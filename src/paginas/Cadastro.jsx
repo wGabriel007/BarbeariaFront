@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexto/AuthContext'
+import { useCaminhoBarbearia } from '../ganchos/useCaminhoBarbearia'
 import { FnAuthLayout } from '../componentes/AuthLayout'
 import { FnButton } from '../componentes/ui/Button'
 import { FnField, FnInput, FnPasswordInput } from '../componentes/ui/Field'
@@ -9,6 +10,7 @@ import { FnErrorAlert } from '../componentes/ui/Feedback'
 export function FnCadastro() {
   const { Fnregistrar } = useAuth()
   const navigate = useNavigate()
+  const Fncaminho = useCaminhoBarbearia()
 
   const [form, setForm] = useState({ nomeCompleto: '', email: '', telefone: '', senha: '', confirmarSenha: '' })
   const [enviando, setEnviando] = useState(false)
@@ -34,7 +36,7 @@ export function FnCadastro() {
         telefone: form.telefone,
         senha: form.senha,
       })
-      navigate('/', { replace: true })
+      navigate(Fncaminho(), { replace: true })
     } catch (err) {
       setErro(err.message)
     } finally {
@@ -103,7 +105,7 @@ export function FnCadastro() {
 
         <p className="text-center text-sm text-brand-500">
           Já tem conta?{' '}
-          <Link to="/login" className="font-medium text-brand-700 hover:underline">
+          <Link to={Fncaminho('/login')} className="font-medium text-brand-700 hover:underline">
             Entrar
           </Link>
         </p>

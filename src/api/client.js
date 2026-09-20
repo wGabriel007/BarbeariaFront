@@ -33,9 +33,26 @@ export function FnsetAuthToken(novoToken) {
   token = novoToken
 }
 
+// "Apelido" (slug) da barbearia atual, tirado da URL (ex.: /barbearia-do-joao/...
+// -> "barbearia-do-joao" — ver ConfiguracaoSiteContext.jsx, que é quem
+// chama isso, sempre que a rota muda). É o que a Api usa pra saber QUAL
+// barbearia responder numa requisição ainda sem token (login, cadastro,
+// leitura pública da configuração do site — ver EmpresaResolverMiddleware
+// na Api). Requisição JÁ autenticada ignora este header por segurança (o
+// EmpresaId vem de dentro do próprio token nesse caso) — por isso não tem
+// problema mandar sempre que existir, mesmo já logado.
+let empresaSlug = null
+
+export function FnsetEmpresaSlug(novoSlug) {
+  empresaSlug = novoSlug
+}
+
 api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+  }
+  if (empresaSlug) {
+    config.headers['X-Empresa-Slug'] = empresaSlug
   }
   return config
 })
