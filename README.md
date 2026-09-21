@@ -131,3 +131,88 @@ sempre a Api, com `403` se alguém tentar pelo DevTools):
 Vercel, conectado ao repositório — a cada push no branch conectado, builda
 e sobe sozinho. Variável de ambiente `VITE_API_URL` configurada direto no
 painel da Vercel, apontando pra URL da Api no Render.
+
+## App Android (Play Store)
+
+O front virou também app Android de verdade, via
+[Capacitor](https://capacitorjs.com/) — sem reescrever nada: o app é uma
+casca nativa que abre o site já publicado na Vercel (`capacitor.config.json`
+→ `server.url`). Isso significa que **um `git push` que atualiza o site já
+atualiza o app sozinho**, sem precisar gerar um apk novo pra cada mudança
+de tela — só quando mudar algo fora da tela (ícone, nome, versão) que
+precisa gerar um apk novo.
+
+**Importante: isto gera o app de UMA barbearia (pro cliente/staff dela
+usar), não "o app do sistema".** A área `/admin` (criar/gerenciar
+barbearias, uso só seu) continua sendo só site, sem app — não faz sentido
+um cliente de barbearia ter isso no celular. Cada barbearia que quiser
+o próprio app vira um projeto separado, gerado a partir deste mesmo
+molde (`capacitor.config.json` aponta pro link daquela barbearia
+específica, ex.: `.../barbearia-do-joao`, não pra raiz do site).
+
+O arquivo é `.json` (dado puro, sem código) de propósito — já tivemos
+problema com `.ts` (incompatível com versões novas do TypeScript) e com
+`.js` (bug do Capacitor lendo `.js` de projeto ESM) — `.json` não tem
+como dar esse tipo de erro.
+
+### Gerar o app de uma barbearia (repita isso pra cada barbearia nova)
+
+1. Em `capacitor.config.json`, troque `appId` (único por barbearia),
+   `appName` (nome que aparece no celular) e a URL dentro de
+   `server.url` (a raiz do site + `/` + o slug daquela barbearia).
+2. Rode `npm run android:novo` — **não** é o `android:sync` (esse só
+   atualiza o que já existe; `appId`/`appName` só entram de verdade
+   recriando a pasta `android/` do zero, é o que esse comando faz).
+3. Siga o passo a passo abaixo normalmente.
+
+Se quiser manter o histórico de qual configuração é de qual barbearia,
+uma ideia simples: depois de gerar o apk de uma barbearia, guarde uma
+cópia da pasta inteira `frontend/` renomeada (ex.:
+`frontend-app-barbearia-do-joao/`) antes de trocar `capacitor.config.json`
+pra próxima — assim não perde o que já configurou.
+
+### Pré-requisito
+
+[Android Studio](https://developer.android.com/studio) instalado no seu
+computador (é ele que compila o app — aqui no ambiente onde eu preparei
+isso não tem como compilar de verdade, só gerar os arquivos do projeto).
+
+### Gerar/atualizar o projeto Android
+
+```bash
+cd frontend
+npm run android:novo   # (só na primeira vez, ou depois de trocar appId/appName/URL)
+npm run android:open   # abre o projeto no Android Studio
+```
+
+Numa atualização comum (só o conteúdo das telas mudou, `appId`/`appName`
+continuam os mesmos), nem precisa disso — o app já busca a versão nova
+sozinho da Vercel na próxima vez que abrir, sem gerar nada.
+
+Dentro do Android Studio: **Build → Generate Signed App Bundle/APK** pra
+gerar o arquivo que sobe na Play Store (formato `.aab`, recomendado pela
+própria Google).
+
+### Antes de publicar
+
+- **Ícone do app**: hoje está com o ícone padrão do Capacitor — troque
+  pela logo da barbearia. Jeito mais fácil: colocar uma imagem quadrada
+  (1024×1024) em `frontend/assets/icon.png` e rodar
+  `npx @capacitor/assets generate --android` (gera todos os tamanhos
+  sozinho).
+- **Conta de desenvolvedor Google Play** — taxa única de $25.
+- **Política de privacidade** — a Play Store exige um link pra uma
+  página de política de privacidade, mesmo pra um app simples.
+- **Chave de assinatura** (`keystore`) — gerada uma vez no próprio
+  Android Studio ao criar o Signed Bundle; guarde esse arquivo e a senha
+  em lugar seguro, sem ela você não consegue mais publicar ATUALIZAÇÕES
+  do mesmo app depois (só um app novo, do zero).
+
+### Estrutura
+
+```
+frontend/
+├── capacitor.config.json # appId, nome do app, e a URL que o app abre
+└── android/              # projeto nativo Android (gerado pelo Capacitor,
+                           # abre direto no Android Studio)
+```

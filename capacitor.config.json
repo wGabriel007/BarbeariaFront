@@ -1,0 +1,9 @@
+{
+  "appId": "com.barbeariasistema.plcortes",
+  "appName": "PL Cortes",
+  "webDir": "dist",
+  "server": {
+    "url": "https://barbeariafront.vercel.app/pl-cortes",
+    "androidScheme": "https"
+  }
+}

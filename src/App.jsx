@@ -5,6 +5,7 @@ import { FnRotaProtegidaAdmin } from './componentes/RotaProtegidaAdmin'
 import { FnPortaDaBarbearia } from './componentes/PortaDaBarbearia'
 import { useAuth } from './contexto/AuthContext'
 import { FnLanding } from './paginas/Landing'
+import { FnPoliticaPrivacidade } from './paginas/PoliticaPrivacidade'
 import { FnAdminLogin } from './paginas/AdminLogin'
 import { FnAdminDashboard } from './paginas/AdminDashboard'
 import { FnNaoEncontrada } from './paginas/NaoEncontrada'
@@ -52,6 +53,7 @@ export default function FnApp() {
   return (
     <Routes>
       <Route path="/" element={<FnLanding />} />
+      <Route path="/politica-de-privacidade" element={<FnPoliticaPrivacidade />} />
 
       <Route path="/admin/login" element={<FnAdminLogin />} />
       <Route
